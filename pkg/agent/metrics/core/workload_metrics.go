@@ -266,17 +266,21 @@ func (w *workloadMetricsCollector) collectPodMetrics(pods []*corev1.Pod, labels 
 
 func (w *workloadMetricsCollector) collectResourceUsageMetrics(pods []*corev1.Pod, labels prometheus.Labels, ch chan<- prometheus.Metric) {
 	podsUsage := w.usageMetricsCache.QueryWorkloadsUsageByPods(pods...)
-	cpuTotalUsage, memoryTotalUsage := map[string]float64{}, map[string]float64{}
+	cpuTotalUsage, memoryTotalUsage, gpuTotalUsage := map[string]float64{}, map[string]float64{}, map[string]float64{}
 	for _, pod := range podsUsage {
 		for _, ctrInfo := range pod.ContainersUsage {
-			if _, ok := cpuTotalUsage[ctrInfo.ResourceName]; !ok {
-				cpuTotalUsage[ctrInfo.ResourceName] = 0
+			if _, ok := cpuTotalUsage[ctrInfo.ContainerName]; !ok {
+				cpuTotalUsage[ctrInfo.ContainerName] = 0
 			}
-			if _, ok := memoryTotalUsage[ctrInfo.ResourceName]; !ok {
-				memoryTotalUsage[ctrInfo.ResourceName] = 0
+			if _, ok := memoryTotalUsage[ctrInfo.ContainerName]; !ok {
+				memoryTotalUsage[ctrInfo.ContainerName] = 0
 			}
-			cpuTotalUsage[ctrInfo.ResourceName] += ctrInfo.CPUUsage
-			memoryTotalUsage[ctrInfo.ResourceName] += ctrInfo.MemoryUsage
+			if _, ok := gpuTotalUsage[ctrInfo.ContainerName]; !ok {
+				gpuTotalUsage[ctrInfo.ContainerName] = 0
+			}
+			cpuTotalUsage[ctrInfo.ContainerName] += ctrInfo.CPUUsage
+			memoryTotalUsage[ctrInfo.ContainerName] += ctrInfo.MemoryUsage
+			gpuTotalUsage[ctrInfo.ContainerName] += 0.0
 		}
 	}
 
@@ -292,6 +296,13 @@ func (w *workloadMetricsCollector) collectResourceUsageMetrics(pods []*corev1.Po
 		labels[values.ContainerNameLabelKey] = containerName
 		ch <- prometheus.MustNewConstMetric(workloadResourceUsageDesc,
 			prometheus.GaugeValue, ram, utils.ConvertPrometheusLabelValuesInOrder(workloadCRCareLabelKey, labels)...)
+	}
+
+	labels[values.ResourceTypeLabelKey] = string(values.ResourceGPU)
+	for containerName, gpu := range gpuTotalUsage {
+		labels[values.ContainerNameLabelKey] = containerName
+		ch <- prometheus.MustNewConstMetric(workloadResourceUsageDesc,
+			prometheus.GaugeValue, gpu, utils.ConvertPrometheusLabelValuesInOrder(workloadCRCareLabelKey, labels)...)
 	}
 }
 

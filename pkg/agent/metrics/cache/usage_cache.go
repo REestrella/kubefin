@@ -32,9 +32,9 @@ import (
 )
 
 type ResourceUsageMetric struct {
-	ResourceName string
-	CPUUsage     float64
-	MemoryUsage  float64
+	ContainerName string
+	CPUUsage      float64
+	MemoryUsage   float64
 }
 
 type PodUsageMetric struct {
@@ -107,9 +107,9 @@ func (c *ClusterResourceUsageMetricsCache) CollectPodMetrics() {
 		}
 		for _, container := range pod.Containers {
 			podUsage.ContainersUsage = append(podUsage.ContainersUsage, ResourceUsageMetric{
-				ResourceName: container.Name,
-				CPUUsage:     utils.ConvertQualityToCore(container.Usage.Cpu()),
-				MemoryUsage:  utils.ConvertQualityToGiB(container.Usage.Memory()),
+				ContainerName: container.Name,
+				CPUUsage:      utils.ConvertQualityToCore(container.Usage.Cpu()),
+				MemoryUsage:   utils.ConvertQualityToGiB(container.Usage.Memory()),
 			})
 		}
 		data = append(data, podUsage)
@@ -130,9 +130,9 @@ func (c *ClusterResourceUsageMetricsCache) CollectNodeMetrics() {
 	data := []ResourceUsageMetric{}
 	for _, node := range nodes.Items {
 		data = append(data, ResourceUsageMetric{
-			ResourceName: node.Name,
-			CPUUsage:     utils.ConvertQualityToCore(node.Usage.Cpu()),
-			MemoryUsage:  utils.ConvertQualityToGiB(node.Usage.Memory()),
+			ContainerName: node.Name,
+			CPUUsage:      utils.ConvertQualityToCore(node.Usage.Cpu()),
+			MemoryUsage:   utils.ConvertQualityToGiB(node.Usage.Memory()),
 		})
 	}
 	c.nodesUsage = data

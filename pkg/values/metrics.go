@@ -45,7 +45,7 @@ var (
 	// Pod level metrics name
 	PodResourceRequestMetricsName = "kubefin_pod_resource_request"
 	PodResourceUsageMetricsName   = "kubefin_pod_resource_usage"
-	PodResoueceCostMetricsName    = "kubefin_pod_resource_cost"
+	PodResourceCostMetricsName    = "kubefin_pod_resource_cost"
 
 	// metrics labels
 	ClusterNameLabelKey       = "cluster_name"

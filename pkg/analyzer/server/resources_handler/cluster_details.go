@@ -28,6 +28,7 @@ import (
 	"kubefin.dev/kubefin/pkg/analyzer/server/implementation"
 	"kubefin.dev/kubefin/pkg/analyzer/types"
 	"kubefin.dev/kubefin/pkg/analyzer/utils"
+	"kubefin.dev/kubefin/pkg/values"
 )
 
 // ClusterCPUResourcesHandler      godoc
@@ -66,6 +67,24 @@ func ClusterMemoryResourcesHandler(ctx *gin.Context) {
 	clusterResourcesHandler(ctx, v1.ResourceMemory)
 }
 
+// ClusterGPUResourcesHandler   godoc
+//
+//	@Summary		Get specific cluster gpu resources metrics
+//	@Description	Get specific cluster gpu resources metrics
+//	@Tags			Resources
+//	@Produce		json
+//	@Param			cluster_id	path		string	true	"Cluster Id"
+//	@Param			startTime	query		uint64	false	"The start time to query"
+//	@Param			endTime		query		uint64	false	"The end time to query"
+//	@Param			stepSeconds	query		uint64	false	"The step seconds of the data to return"
+//	@Success		200			{object}	types.ClusterResourceMetrics
+//	@Failure		500			{object}	types.StatusError
+//	@Router			/resources/clusters/{cluster_id}/gpu [get]
+func ClusterGPUResourcesHandler(ctx *gin.Context) {
+	klog.V(4).Info("Start to query cluster GPU resources metrics")
+	clusterResourcesHandler(ctx, values.ResourceGPU)
+}
+
 func clusterResourcesHandler(ctx *gin.Context, resourceType v1.ResourceName) {
 	tenantId := utils.ParserTenantIdFromCtx(ctx)
 	clusterId := utils.ParseClusterFromCtx(ctx)
@@ -80,13 +99,13 @@ func clusterResourcesHandler(ctx *gin.Context, resourceType v1.ResourceName) {
 			types.QueryFailedStatus, types.QueryFailedReason, err.Error())
 		return
 	}
-	clusterMemoryMetrics, err := implementation.QueryClusterResourcesSummaryWithTimeRange(tenantId, clusterId, resourceType, startTime, endTime, stepSeconds)
+	clusterResourceMetrics, err := implementation.QueryClusterResourcesSummaryWithTimeRange(tenantId, clusterId, resourceType, startTime, endTime, stepSeconds)
 	if err != nil {
 		utils.ForwardStatusError(ctx, http.StatusInternalServerError,
 			types.QueryFailedStatus, types.QueryFailedReason, err.Error())
 		return
 	}
-	if clusterMemoryMetrics == nil {
+	if clusterResourceMetrics == nil {
 		msg := fmt.Sprintf("Resource(%s) not found for cluster(%s) from %d to %d",
 			resourceType, clusterId, startTime, endTime)
 		utils.ForwardStatusError(ctx, http.StatusNotFound,
@@ -94,7 +113,7 @@ func clusterResourcesHandler(ctx *gin.Context, resourceType v1.ResourceName) {
 		return
 	}
 
-	bodyBytes, err := json.Marshal(clusterMemoryMetrics)
+	bodyBytes, err := json.Marshal(clusterResourceMetrics)
 	if err != nil {
 		utils.ForwardStatusError(ctx, http.StatusInternalServerError,
 			types.QueryFailedStatus, types.QueryFailedReason, err.Error())

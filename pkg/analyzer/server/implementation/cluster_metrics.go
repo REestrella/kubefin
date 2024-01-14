@@ -132,7 +132,7 @@ func queryClusterResourceSystemTakenWithTimeRange(tenantId, clusterId string, re
 	promql := fmt.Sprintf(query.QlSumNodesResourceSystemTakenFromCluster, clusterId, resourceType)
 	ret, err := query.GetPromQueryClient().WithTenantId(tenantId).QueryRangeWithStep(promql, start, end, stepSeconds)
 	if err != nil {
-		klog.Errorf("Query cluster(%s) resource system takne error:%v", clusterId, err)
+		klog.Errorf("Query cluster(%s) resource system taken error:%v", clusterId, err)
 		return nil, err
 	}
 	if len(ret) != 1 {

@@ -79,7 +79,7 @@ var (
 		"The node total hourly cost for the node", metricsCostLabelKey, nil)
 	nodeResourceHourlyCostDesc = prometheus.NewDesc(
 		values.NodeResourceHourlyCostMetricsName,
-		"The node hourly cpu/ram(total cores) cost for the node", metricsCostUnifiedLabelKey, nil)
+		"The node hourly cpu/ram/gpu(total cores) cost for the node", metricsCostUnifiedLabelKey, nil)
 	nodeResourceTotalDesc = prometheus.NewDesc(
 		values.NodeResourceTotalMetricsName,
 		"The total node resource for the node", resourceMetricsLabelKey, nil)
@@ -94,7 +94,7 @@ var (
 		"The node resource usage for the node", resourceMetricsLabelKey, nil)
 	nodeResourceRequestedDesc = prometheus.NewDesc(
 		values.NodeResourceRequestedName,
-		"The node resoruce requested for the node", resourceMetricsLabelKey, nil)
+		"The node resource requested for the node", resourceMetricsLabelKey, nil)
 )
 
 type nodeResourceInfo struct {
@@ -282,13 +282,13 @@ func (n *nodeMetricsCollector) collectNodeCost(ch chan<- prometheus.Metric) {
 func (n *nodeMetricsCollector) collectNodeResourceUsage(ch chan<- prometheus.Metric) {
 	nodes := n.usageMetricsCache.QueryAllNodesUsage()
 	for _, node := range nodes {
-		nodeCostInfo, err := n.getNodeCostInfo(node.ResourceName)
+		nodeCostInfo, err := n.getNodeCostInfo(node.ContainerName)
 		if err != nil {
 			continue
 		}
 
 		metricsLabels := prometheus.Labels{
-			values.NodeNameLabelKey:    node.ResourceName,
+			values.NodeNameLabelKey:    node.ContainerName,
 			values.ClusterNameLabelKey: n.clusterName,
 			values.ClusterIdLabelKey:   n.clusterId,
 			values.BillingModeLabelKey: nodeCostInfo.BillingMode,
@@ -302,6 +302,9 @@ func (n *nodeMetricsCollector) collectNodeResourceUsage(ch chan<- prometheus.Met
 
 		// metrics-server cannot provide metrics about GPU usage,
 		// an alternative is to introduce dcgm-exporter.
+		metricsLabels[values.ResourceTypeLabelKey] = string(values.ResourceGPU)
+		ch <- prometheus.MustNewConstMetric(nodeResourceUsageDesc,
+			prometheus.GaugeValue, 0.0, utils.ConvertPrometheusLabelValuesInOrder(resourceMetricsLabelKey, metricsLabels)...)
 	}
 }
 
@@ -380,6 +383,8 @@ func (n *nodeMetricsCollector) collectNodeResourceMetrics(ch chan<- prometheus.M
 
 			ch <- prometheus.MustNewConstMetric(nodeResourceRequestedDesc,
 				prometheus.GaugeValue, utils.ConvertQualityToGiB(&requested), utils.ConvertPrometheusLabelValuesInOrder(resourceMetricsLabelKey, metricsLabels)...)
+			ch <- prometheus.MustNewConstMetric(nodeResourceSystemTakenDesc,
+				prometheus.GaugeValue, 0.0, utils.ConvertPrometheusLabelValuesInOrder(resourceMetricsLabelKey, metricsLabels)...)
 			ch <- prometheus.MustNewConstMetric(nodeResourceAvailableDesc,
 				prometheus.GaugeValue, utils.ConvertQualityToGiB(&allocatable), utils.ConvertPrometheusLabelValuesInOrder(resourceMetricsLabelKey, metricsLabels)...)
 		}

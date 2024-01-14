@@ -51,6 +51,7 @@ func initMetricsRouter(router *gin.Engine, corsHandler gin.HandlerFunc) {
 	metricsGroup.GET("/clusters/:cluster_id/summary", resources_handler.ClusterResourcesSummaryHandler)
 	metricsGroup.GET("/clusters/:cluster_id/cpu", resources_handler.ClusterCPUResourcesHandler)
 	metricsGroup.GET("/clusters/:cluster_id/memory", resources_handler.ClusterMemoryResourcesHandler)
+	metricsGroup.GET("/clusters/:cluster_id/gpu", resources_handler.ClusterGPUResourcesHandler)
 	metricsGroup.Use(gzip.Gzip(gzip.DefaultCompression))
 	metricsGroup.Use(corsHandler)
 }

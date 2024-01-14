@@ -54,7 +54,7 @@ var (
 	}
 
 	podResourceCostDesc = prometheus.NewDesc(
-		values.PodResoueceCostMetricsName,
+		values.PodResourceCostMetricsName,
 		"The pod level resource cost",
 		containerNoneCareLabelKey, nil)
 	podResourceRequestDesc = prometheus.NewDesc(
@@ -167,19 +167,25 @@ func (p *podMetricsCollector) CollectPodResourceUsage(ch chan<- prometheus.Metri
 
 		labels[values.ResourceTypeLabelKey] = string(corev1.ResourceCPU)
 		for _, ctrInfo := range pod.ContainersUsage {
-			labels[values.ContainerNameLabelKey] = ctrInfo.ResourceName
+			labels[values.ContainerNameLabelKey] = ctrInfo.ContainerName
 			ch <- prometheus.MustNewConstMetric(podResourceUsageDesc,
 				prometheus.GaugeValue, ctrInfo.CPUUsage, utils.ConvertPrometheusLabelValuesInOrder(containerCareLabelKey, labels)...)
 		}
 		labels[values.ResourceTypeLabelKey] = string(corev1.ResourceMemory)
 		for _, ctrInfo := range pod.ContainersUsage {
-			labels[values.ContainerNameLabelKey] = ctrInfo.ResourceName
+			labels[values.ContainerNameLabelKey] = ctrInfo.ContainerName
 			ch <- prometheus.MustNewConstMetric(podResourceUsageDesc,
 				prometheus.GaugeValue, ctrInfo.MemoryUsage, utils.ConvertPrometheusLabelValuesInOrder(containerCareLabelKey, labels)...)
 		}
 
 		// metrics-server cannot provide metrics about GPU usage,
 		// an alternative is to introduce dcgm-exporter.
+		labels[values.ResourceTypeLabelKey] = string(values.ResourceGPU)
+		for _, ctrInfo := range pod.ContainersUsage {
+			labels[values.ContainerNameLabelKey] = ctrInfo.ContainerName
+			ch <- prometheus.MustNewConstMetric(podResourceUsageDesc,
+				prometheus.GaugeValue, 0.0, utils.ConvertPrometheusLabelValuesInOrder(containerCareLabelKey, labels)...)
+		}
 	}
 }
 
